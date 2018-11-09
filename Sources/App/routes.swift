@@ -1,20 +1,39 @@
 import Vapor
 
+// Customerのstructをつくる
+struct Customer :Content {
+    var name :String
+}
+
 /// Register your application's routes here.
 public func routes(_ router: Router) throws {
-    // Basic "It works" example
-    router.get { req in
-        return "It works!"
-    }
-    
-    // Basic "Hello, world!" example
-    router.get("hello") { req in
-        return "Hello, world!"
+
+    // route "hello"に来たリクエストは、Future.mapで、
+    // request と return "Hello World"を結びつけている
+    router.get("hello") { request -> Future<String> in
+        return Future.map(on: request, { () -> String in
+            return "Hello World"
+        })
     }
 
-    // Example of configuring a controller
-    let todoController = TodoController()
-    router.get("todos", use: todoController.index)
-    router.post("todos", use: todoController.create)
-    router.delete("todos", Todo.parameter, use: todoController.delete)
+    // route "customers"に来たリクエストは、Future<[Customer]>で
+    // getAllCustomers()を返す
+    router.get("customers") { request -> Future<[Customer]> in
+
+        return getAllCustomers(req: request)
+    }
+
+    // getAllCustomers()をつくる
+    func getAllCustomers(req :Request) -> Future<[Customer]> {
+
+        return Future.flatMap(on: req) { () -> EventLoopFuture<[Customer]> in
+
+            var customers = [Customer(name: "john"), Customer(name: "mary")]
+            customers[0].name = "Alex"
+
+            return Future.map(on: req, { () -> [Customer] in
+                return customers
+            })
+        }
+    }
 }
